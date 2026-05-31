@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.models.prediction import Prediction
-from app.schemas.predict import PredictionHistoryItem, PaginatedHistory
+from app.models.disease import Disease
+from app.schemas.predict import PredictionHistoryItem, PaginatedHistory, PredictionResponse, PredictionResult
 from app.core.dependencies import get_current_user
 from app.utils.minio_client import minio_client
 
@@ -62,7 +63,7 @@ async def get_history(
     return PaginatedHistory(items=items, total=total, page=page, pages=pages)
 
 
-@router.get("/{prediction_id}", response_model=PredictionHistoryItem)
+@router.get("/{prediction_id}", response_model=PredictionResponse)
 async def get_prediction_detail(
     prediction_id: str,
     user: User = Depends(get_current_user),
@@ -86,12 +87,39 @@ async def get_prediction_detail(
             message="Prediction not found.",
         )
 
-    return PredictionHistoryItem(
+    # Look up disease info dynamically from the database
+    disease_info = await db.execute(
+        select(Disease).where(Disease.name == prediction.disease_name)
+    )
+    disease = disease_info.scalar_one_or_none()
+
+    severity = disease.severity if disease else prediction.severity
+    remedies = disease.remedies if disease else (prediction.remedies.get("remedies") if isinstance(prediction.remedies, dict) else (prediction.remedies if isinstance(prediction.remedies, list) else []))
+    symptoms = disease.symptoms if disease else []
+    prevention = disease.prevention if disease else []
+
+    # Synthesize top predictions from current values
+    top_predictions = [
+        {
+            "class_name": prediction.disease_name,
+            "confidence": prediction.confidence,
+        }
+    ]
+
+    result_detail = PredictionResult(
+        disease_name=prediction.disease_name or "Unknown",
+        confidence=prediction.confidence or 0.0,
+        severity=severity,
+        remedies=remedies or [],
+        symptoms=symptoms or [],
+        prevention=prevention or [],
+        top_predictions=top_predictions,
+    )
+
+    return PredictionResponse(
         id=prediction.id,
         image_url=minio_client.get_image_url(prediction.image_url),
         selected_crop=prediction.selected_crop,
-        disease_name=prediction.disease_name,
-        confidence=prediction.confidence,
-        severity=prediction.severity,
+        result=result_detail,
         created_at=prediction.created_at,
     )

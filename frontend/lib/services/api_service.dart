@@ -52,7 +52,9 @@ class ApiService {
 class _AuthInterceptor extends Interceptor {
   final Dio _dio;
   final FlutterSecureStorage _storage;
-  bool _isRefreshing = false;
+  
+  // Track the active refresh future to queue concurrent 401s
+  Future<String?>? _refreshFuture;
 
   _AuthInterceptor(this._dio, this._storage);
 
@@ -75,39 +77,57 @@ class _AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // If 401 and not already refreshing, try to refresh the token
-    if (err.response?.statusCode == 401 && !_isRefreshing) {
-      _isRefreshing = true;
+    // If 401, try to refresh the token
+    if (err.response?.statusCode == 401) {
+      final publicPaths = [ApiConfig.login, ApiConfig.register, ApiConfig.health];
+      if (publicPaths.any((path) => err.requestOptions.path.contains(path))) {
+        return handler.next(err);
+      }
 
       try {
-        final refreshToken = await _storage.read(key: 'refresh_token');
-        if (refreshToken == null) {
-          _isRefreshing = false;
-          return handler.next(err);
+        // Create a single refresh future if none is active using an explicitly typed local function
+        Future<String?> doRefresh() async {
+          final refreshToken = await _storage.read(key: 'refresh_token');
+          if (refreshToken == null) {
+            return null;
+          }
+
+          try {
+            // Call refresh endpoint using a fresh Dio instance to avoid interceptor recursion
+            final response = await Dio(BaseOptions(baseUrl: ApiConfig.baseUrl)).post(
+              ApiConfig.refresh,
+              data: {'refresh_token': refreshToken},
+            );
+
+            if (response.statusCode == 200) {
+              final newAccessToken = response.data['access_token'];
+              await _storage.write(key: 'access_token', value: newAccessToken);
+              return newAccessToken as String?;
+            }
+          } catch (e) {
+            // Refresh failed — clear tokens (user needs to log in again)
+            await _storage.deleteAll();
+          }
+          return null;
         }
 
-        // Call refresh endpoint
-        final response = await Dio(BaseOptions(baseUrl: ApiConfig.baseUrl)).post(
-          ApiConfig.refresh,
-          data: {'refresh_token': refreshToken},
-        );
+        _refreshFuture ??= doRefresh();
 
-        if (response.statusCode == 200) {
-          final newAccessToken = response.data['access_token'];
-          await _storage.write(key: 'access_token', value: newAccessToken);
+        // Await the shared refresh future
+        final newAccessToken = await _refreshFuture;
+        
+        // Reset the future for subsequent refresh cycles
+        _refreshFuture = null;
 
-          // Retry the original request with new token
+        if (newAccessToken != null) {
+          // Retry the original request with the new access token
           err.requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
           final retryResponse = await _dio.fetch(err.requestOptions);
-          _isRefreshing = false;
           return handler.resolve(retryResponse);
         }
       } catch (e) {
-        // Refresh failed — clear tokens (user needs to login again)
-        await _storage.deleteAll();
+        // Fall through to regular error handler
       }
-
-      _isRefreshing = false;
     }
 
     handler.next(err);

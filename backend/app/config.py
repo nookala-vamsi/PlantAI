@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # ── JWT ──
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ── MinIO ──
@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # ── ML Model ──
     MODEL_PATH: str = "../ml/models/plant_disease_model.keras"
     LABELS_PATH: str = "../ml/models/labels.json"
+    GATE1_MODEL_PATH: str = "../gate_1/leaf_detector.keras"
+    GATE2_MODEL_PATH: str = "../gate_2/species_classifier.keras"
+    GATE2_LABELS_PATH: str = "../gate_2/species_labels.json"
 
     # ── Rate Limiting ──
     RATE_LIMIT_PER_MINUTE: int = 10

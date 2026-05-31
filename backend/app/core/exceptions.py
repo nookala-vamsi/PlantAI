@@ -115,3 +115,53 @@ class PredictionFailed(AppException):
             error_code="PREDICTION_FAILED",
             message="Unable to process this image. Please try again.",
         )
+
+
+# ── Drug Classification Exceptions ──
+
+class InvalidSMILES(AppException):
+    def __init__(self, message: str = "Invalid SMILES molecular structure string."):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code="INVALID_SMILES",
+            message=message,
+        )
+
+
+class DrugPredictionFailed(AppException):
+    def __init__(self, details: str = None):
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            error_code="DRUG_PREDICTION_FAILED",
+            message="Failed to compute drug classification prediction.",
+            details=details,
+        )
+
+
+# ── 3-Gate Pipeline Exceptions ──
+
+class NotALeaf(AppException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code="NOT_A_LEAF",
+            message="This doesn't look like a leaf. Please upload a clear leaf image.",
+        )
+
+
+class CropMismatch(AppException):
+    def __init__(self, predicted: str, selected: str):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code="CROP_MISMATCH",
+            message=f"This looks like a {predicted} leaf, not {selected}. Scan as {predicted} instead?",
+        )
+
+
+class LowConfidence(AppException):
+    def __init__(self):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code="LOW_CONFIDENCE",
+            message="Unable to identify the disease clearly. Try a clearer, well-lit photo of the leaf.",
+        )

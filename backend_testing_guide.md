@@ -9,11 +9,13 @@
 Before starting, confirm:
 
 - [x] Docker Desktop installed
-- [x] Python 3.13 + virtual environment created (`F:\ML_PROJECT\venv\`)
-- [x] All packages installed
+- [x] Python 3.12 + virtual environment created (`F:\ML_PROJECT\venv\`)
+- [x] All packages installed (including PyTorch, RDKit, and PyG wheels)
 - [x] Model files present in `F:\ML_PROJECT\ml\models\`
   - `plant_disease_model.keras` (30.4 MB)
   - `labels.json` (1.4 KB)
+- [x] GIN model file present in `F:\ML_PROJECT\ml\models\drug_classification\`
+  - `gin_drug_classifier_final.pt` (499 KB)
 
 ---
 
@@ -149,6 +151,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 🧠 Loading model from ..\ml\models\plant_disease_model.keras...
 ✅ Model loaded!
 ✅ Labels loaded: 38 classes
+[DrugMLService] Loading Drug GIN model from F:\ML_PROJECT\ml\models\drug_classification\gin_drug_classifier_final.pt...
+[DrugMLService] GIN Drug Classifier loaded successfully!
+✅ Drug GIN model loaded
 🌿 PlantDiseaseAI v1.0.0 is ready!
 INFO:     Uvicorn running on http://0.0.0.0:8000
 ```
@@ -343,6 +348,81 @@ Now all protected endpoints will automatically include your JWT token!
 2. Click **"Try it out"** → **"Execute"**
 
 **Expected:** `"Logged out successfully."`
+
+---
+
+### 8.11 — Drug Origin Classification 🧬
+
+> [!IMPORTANT]
+> This is a protected endpoint! Make sure you have authorized Swagger UI using **Step 8.4** (with your active JWT token) before proceeding.
+
+1. Find `POST /api/v1/drug/predict` in the list (under the **Drug Classification** tag)
+2. Click **"Try it out"**
+3. Replace the request body with a molecular SMILES structure string.
+
+#### Test Case A: High-Confidence Plant Molecule (Quercetin)
+Use this request body:
+```json
+{
+  "smiles": "O=c1c(O)c(-c2ccc(O)c(O)c2)oc2cc(O)cc(O)c12"
+}
+```
+*Click **"Execute"***.
+**Expected Response (200 OK):**
+```json
+{
+  "predicted_class": "Plant",
+  "prediction": "Plant",
+  "confidence": {
+    "Plant": 0.9423,
+    "Fungal": 0.0411,
+    "Bacterial": 0.0166
+  },
+  "note": null,
+  "warning": null
+}
+```
+
+#### Test Case B: Low-Confidence Molecule (Aspirin)
+Use this request body:
+```json
+{
+  "smiles": "CC(=O)Oc1ccccc1C(=O)O"
+}
+```
+*Click **"Execute"***.
+**Expected Response (200 OK):**
+```json
+{
+  "predicted_class": "Fungal",
+  "prediction": "Fungal",
+  "confidence": {
+    "Plant": 0.2273,
+    "Fungal": 0.4429,
+    "Bacterial": 0.3298
+  },
+  "note": "Low confidence prediction — this compound may have ambiguous origin",
+  "warning": "Low confidence prediction — this compound may have ambiguous origin"
+}
+```
+
+#### Test Case C: Invalid Molecular Structure (Gibberish)
+Use this request body:
+```json
+{
+  "smiles": "ABC-NOT-A-MOLECULE"
+}
+```
+*Click **"Execute"***.
+**Expected Response (400 Bad Request):**
+```json
+{
+  "status": "error",
+  "error_code": "INVALID_SMILES",
+  "message": "Invalid SMILES string. Please check your input.",
+  "details": null
+}
+```
 
 ---
 

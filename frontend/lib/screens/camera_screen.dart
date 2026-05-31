@@ -18,6 +18,14 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(predictionProvider.notifier).clearResult();
+    });
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(
       source: source,

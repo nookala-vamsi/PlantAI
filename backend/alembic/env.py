@@ -12,7 +12,7 @@ from alembic import context
 
 # Import our models so Alembic can detect them for autogenerate
 from app.database import Base
-from app.models import User, Prediction, Crop, Disease  # noqa: F401
+from app.models import User, Prediction, Crop, Disease, DrugPrediction  # noqa: F401
 from app.config import get_settings
 
 settings = get_settings()

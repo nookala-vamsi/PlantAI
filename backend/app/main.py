@@ -14,6 +14,8 @@ from app.utils.redis_client import redis_client
 from app.utils.minio_client import minio_client
 from app.services.ml_service import ml_service
 from app.routers import auth, predict, history, crops
+from app.drug_classification.service import drug_ml_service
+from app.drug_classification.router import router as drug_router
 
 settings = get_settings()
 
@@ -39,6 +41,10 @@ async def lifespan(app: FastAPI):
     # Load ML model
     ml_service.load_model()
     print("✅ ML model loaded")
+
+    # Load Drug ML model
+    drug_ml_service.load_model()
+    print("✅ Drug GIN model loaded")
 
     print(f"🌿 PlantDiseaseAI v{settings.APP_VERSION} is ready!")
 
@@ -72,6 +78,7 @@ app.include_router(auth.router)
 app.include_router(predict.router)
 app.include_router(history.router)
 app.include_router(crops.router)
+app.include_router(drug_router)
 
 
 # ── Health Check ──

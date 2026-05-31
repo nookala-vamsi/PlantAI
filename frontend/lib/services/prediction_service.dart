@@ -60,6 +60,16 @@ class PredictionService {
     }
   }
 
+  /// Get prediction details by ID
+  Future<Map<String, dynamic>> getPredictionDetail(String predictionId) async {
+    try {
+      final response = await _api.get('${ApiConfig.history}/$predictionId');
+      return response.data;
+    } on DioException catch (e) {
+      throw _parseError(e);
+    }
+  }
+
   String _parseError(DioException e) {
     if (e.response?.data != null && e.response?.data is Map) {
       final detail = e.response?.data['detail'];

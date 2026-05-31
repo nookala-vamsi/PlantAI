@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:plant_disease_ai/config/theme.dart';
 import 'package:plant_disease_ai/providers/auth_provider.dart';
@@ -37,7 +38,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _checkAuth() async {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    context.go('/login');
+
+    try {
+      const storage = FlutterSecureStorage();
+      final token = await storage.read(key: 'access_token');
+      if (token != null) {
+        // Silently update the auth status in authProvider in background
+        ref.read(authProvider.notifier).checkAuthStatus();
+        if (mounted) {
+          context.go('/home');
+        }
+      } else {
+        if (mounted) {
+          context.go('/login');
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        context.go('/login');
+      }
+    }
   }
 
   @override

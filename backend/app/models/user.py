@@ -44,6 +44,7 @@ class User(Base):
 
     # Relationships
     predictions = relationship("Prediction", back_populates="user", lazy="selectin")
+    drug_predictions = relationship("DrugPrediction", back_populates="user", lazy="selectin")
 
     def __repr__(self) -> str:
         return f"<User {self.username} ({self.email})>"

@@ -56,7 +56,7 @@ Look for **"Wireless LAN adapter Wi-Fi"** section and find the **IPv4 Address**:
 
 ```
 Wireless LAN adapter Wi-Fi:
-   IPv4 Address. . . . . . . . . : 192.168.1.5    ← THIS IS YOUR IP
+   IPv4 Address. . . . . . . . . : 192.168.29.164    ← THIS IS YOUR IP
 ```
 
 **Copy this IP address** — you need it in the next step.
@@ -78,7 +78,7 @@ API_BASE_URL=http://10.0.2.2:8000/api/v1
 
 **After (replace with YOUR IP from Step 2):**
 ```
-API_BASE_URL=http://192.168.1.5:8000/api/v1
+API_BASE_URL=http://192.168.29.164:8000/api/v1
 ```
 
 > `10.0.2.2` is only for the Android emulator. For a physical device, you need the actual WiFi IP.
@@ -127,7 +127,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000
 Open your phone's browser and go to:
 
 ```
-http://192.168.1.5:8000/api/v1/health
+http://192.168.29.164:8000/api/v1/health
 ```
 
 *(Replace with YOUR IP)*
@@ -229,7 +229,16 @@ The app should now be **open on your phone!** 📱
 - Tap **"View History"** or the history icon on Home
 - You should see your previous prediction(s)
 
-### 6.8 — Logout
+### 6.8 — Drug Origin Classification 🧬
+1. On the Home screen, tap the **"Drug Origin Classification"** promo card below the header.
+2. Verify GoRouter successfully navigates you to the **Drug Origin Classification** screen.
+3. Try typing or pasting a molecular SMILES string (e.g., `CC(=O)Oc1ccccc1C(=O)O` for Aspirin, or select one of the Quick Test Presets).
+4. Tap **"Classify Drug"** and wait for the results.
+5. You should see a beautifully styled card displaying the predicted origin (Plant, Fungal, or Bacterial) along with its confidence percentage.
+6. Verify that the breakdown section displays the calculated probabilities for all three origins.
+7. If the maximum confidence is below 60% (e.g., Aspirin, which predicts Fungal with ~44% confidence), verify that the orange warning card is displayed with the note: **"Low confidence prediction — this compound may have ambiguous origin"**.
+
+### 6.9 — Logout
 - On Home screen, tap the **red logout icon** (top-right)
 - You should be redirected back to Login
 

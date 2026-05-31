@@ -3,41 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:plant_disease_ai/config/theme.dart';
 import 'package:plant_disease_ai/providers/auth_provider.dart';
-import 'package:plant_disease_ai/providers/prediction_provider.dart';
-
-// Crop icons mapping
-const Map<String, IconData> _cropIcons = {
-  'Apple': Icons.apple,
-  'Blueberry': Icons.breakfast_dining,
-  'Cherry': Icons.filter_vintage,
-  'Corn': Icons.grass,
-  'Grape': Icons.wine_bar,
-  'Orange': Icons.circle,
-  'Peach': Icons.spa,
-  'Pepper': Icons.local_fire_department,
-  'Potato': Icons.egg_alt,
-  'Raspberry': Icons.grain,
-  'Soybean': Icons.eco,
-  'Squash': Icons.yard,
-  'Strawberry': Icons.favorite,
-  'Tomato': Icons.circle,
-};
-
-const List<Color> _cropColors = [
-  Color(0xFF2D6A4F), Color(0xFF4361EE), Color(0xFFE63946),
-  Color(0xFFF77F00), Color(0xFF7209B7), Color(0xFFFF6D00),
-  Color(0xFFE76F51), Color(0xFF2A9D8F), Color(0xFFB5838D),
-  Color(0xFFD62828), Color(0xFF588157), Color(0xFFFCA311),
-  Color(0xFFE63946), Color(0xFFEF233C),
-];
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cropsAsync = ref.watch(cropsProvider);
-
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -45,7 +16,7 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Header
               Row(
@@ -54,25 +25,24 @@ class HomeScreen extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('PlantGuard 🌿',
-                          style: Theme.of(context).textTheme.headlineMedium),
+                      Text(
+                        'PlantGuard 🌿',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('Select a crop to scan',
-                          style: Theme.of(context).textTheme.bodyMedium),
+                      Text(
+                        'AI-Powered Bioscience Suite',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                      ),
                     ],
                   ),
                   Row(
                     children: [
-                      // History button
-                      IconButton(
-                        onPressed: () => context.push('/history'),
-                        icon: const Icon(Icons.history_rounded),
-                        tooltip: 'Prediction History',
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.surfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
                       // Logout button
                       IconButton(
                         onPressed: () async {
@@ -84,57 +54,60 @@ class HomeScreen extends ConsumerWidget {
                         style: IconButton.styleFrom(
                           backgroundColor: AppColors.error.withValues(alpha: 0.1),
                           foregroundColor: AppColors.error,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 36),
 
-              // Crop Grid
-              Expanded(
-                child: cropsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (err, _) => Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                        const SizedBox(height: 12),
-                        Text('Failed to load crops', style: Theme.of(context).textTheme.titleMedium),
-                        const SizedBox(height: 16),
-                        OutlinedButton(
-                          onPressed: () => ref.invalidate(cropsProvider),
-                          child: const Text('Retry'),
-                        ),
-                      ],
+              Text(
+                'Select a Classification Module',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
                     ),
-                  ),
-                  data: (crops) => GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 14,
-                      crossAxisSpacing: 14,
-                      childAspectRatio: 1.1,
-                    ),
-                    itemCount: crops.length,
-                    itemBuilder: (context, index) {
-                      final crop = crops[index];
-                      final color = _cropColors[index % _cropColors.length];
-                      final icon = _cropIcons[crop['name']] ?? Icons.eco;
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Choose one of the core AI modules below to start scanning and analysis.',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.3),
+              ),
+              const SizedBox(height: 28),
 
-                      return _CropCard(
-                        name: crop['name'],
-                        scientificName: crop['scientific_name'] ?? '',
-                        color: color,
-                        icon: icon,
-                        onTap: () => context.push('/camera/${crop['name']}'),
-                      );
-                    },
-                  ),
+              // Module 1: Plant Disease Classification Bar
+              _ModuleSelectionCard(
+                title: 'Plant Disease Classification',
+                description: 'Scan crop leaves to diagnose and treat diseases using deep convolutional neural networks.',
+                icon: Icons.psychology_alt_rounded,
+                gradientColors: const [AppColors.success, Color(0xFF52B788)],
+                iconBgColor: Colors.white24,
+                onTap: () => context.push('/crop_selection'),
+              ),
+              const SizedBox(height: 20),
+
+              // Module 2: Drug Origin Classification Bar
+              _ModuleSelectionCard(
+                title: 'Drug Origin Classification',
+                description: 'Analyze molecular SMILES structures to predict biological origin using graph isomorphism networks.',
+                icon: Icons.biotech_rounded,
+                gradientColors: const [Color(0xFF7209B7), Color(0xFF4361EE)],
+                iconBgColor: Colors.white24,
+                onTap: () => context.push('/drug_classification'),
+              ),
+
+              const Spacer(),
+              const Center(
+                child: Text(
+                  'Powered by PlantGuard AI Engine v1.0.0',
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -143,66 +116,103 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _CropCard extends StatelessWidget {
-  final String name;
-  final String scientificName;
-  final Color color;
+class _ModuleSelectionCard extends StatefulWidget {
+  final String title;
+  final String description;
   final IconData icon;
+  final List<Color> gradientColors;
+  final Color iconBgColor;
   final VoidCallback onTap;
 
-  const _CropCard({
-    required this.name,
-    required this.scientificName,
-    required this.color,
+  const _ModuleSelectionCard({
+    required this.title,
+    required this.description,
     required this.icon,
+    required this.gradientColors,
+    required this.iconBgColor,
     required this.onTap,
   });
 
   @override
+  State<_ModuleSelectionCard> createState() => _ModuleSelectionCardState();
+}
+
+class _ModuleSelectionCardState extends State<_ModuleSelectionCard> {
+  double _scale = 1.0;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
+      onTapDown: (_) => setState(() => _scale = 0.96),
+      onTapUp: (_) => setState(() => _scale = 1.0),
+      onTapCancel: () => setState(() => _scale = 1.0),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 100),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: widget.gradientColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: widget.gradientColors.first.withValues(alpha: 0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  color: widget.iconBgColor,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(icon, color: color, size: 28),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                name,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: color,
+                child: Icon(
+                  widget.icon,
+                  color: Colors.white,
+                  size: 36,
                 ),
               ),
-              if (scientificName.isNotEmpty)
-                Text(
-                  scientificName,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                    color: color.withValues(alpha: 0.6),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.description,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Colors.white.withValues(alpha: 0.85),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: Colors.white70,
+                size: 16,
+              ),
             ],
           ),
         ),

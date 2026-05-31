@@ -1,0 +1,82 @@
+{
+  "model": "GIN (Graph Isomorphism Network)",
+  "dataset": "COCONUT (filtered)",
+  "dataset_size": 61037,
+  "train_size": 42725,
+  "val_size": 9156,
+  "test_size": 9156,
+  "hyperparameters": {
+    "hidden_dim": 128,
+    "num_layers": 3,
+    "dropout": 0.3,
+    "learning_rate": 0.001,
+    "batch_size": 64,
+    "pooling": "sum",
+    "use_edge_features": true,
+    "patience": 20,
+    "max_epochs": 200
+  },
+  "results": {
+    "balanced_accuracy": 0.8814129268828016,
+    "mcc": 0.8002369701825724,
+    "macro_f1": 0.8600078738133714,
+    "weighted_f1": 0.8826737636048206,
+    "test_loss": 0.35957470732830976,
+    "per_class_precision": [
+      0.9662273476112027,
+      0.7857142857142857,
+      0.7798216276477146
+    ],
+    "per_class_recall": [
+      0.8807959451849071,
+      0.8700839593460009,
+      0.8933588761174968
+    ],
+    "per_class_f1": [
+      0.9215358931552587,
+      0.8257496330467603,
+      0.8327380952380953
+    ],
+    "per_class_support": [
+      5327,
+      2263,
+      1566
+    ],
+    "confusion_matrix": [
+      [
+        4692,
+        415,
+        220
+      ],
+      [
+        119,
+        1969,
+        175
+      ],
+      [
+        45,
+        122,
+        1399
+      ]
+    ],
+    "best_epoch": 95,
+    "total_training_time_minutes": 25.641265134016674
+  },
+  "benchmark_comparison": {
+    "balanced_accuracy": {
+      "GIN": 0.8814129268828016,
+      "MAP4+SVM": 0.919,
+      "beat_benchmark": false
+    },
+    "MCC": {
+      "GIN": 0.8002369701825724,
+      "MAP4+SVM": 0.879,
+      "beat_benchmark": false
+    },
+    "macro_F1": {
+      "GIN": 0.8600078738133714,
+      "MAP4+SVM": 0.929,
+      "beat_benchmark": false
+    }
+  }
+}

@@ -13,7 +13,7 @@ from app.schemas.predict import PredictionResponse, PredictionResult
 from app.core.dependencies import get_current_user
 from app.core.exceptions import (
     InvalidImage, ImageTooLarge, InvalidCrop,
-    RateLimitExceeded, PredictionFailed,
+    RateLimitExceeded, PredictionFailed, AppException,
 )
 from app.services.ml_service import ml_service
 from app.utils.redis_client import redis_client
@@ -83,13 +83,62 @@ async def predict_disease(
     image_hash = ml_service.compute_image_hash(image_bytes)
     cached = await redis_client.get_cached_prediction(image_hash)
     if cached:
-        # Return cached result without re-running the model
-        return PredictionResponse(
-            id=cached["id"],
-            image_url=cached["image_url"],
+        # Check if we have image_path in cache
+        image_path = cached.get("image_path")
+        if not image_path:
+            # Fallback: upload image to get path, then update cache
+            image_path = minio_client.upload_image(
+                str(user.id), image_bytes, image.content_type
+            )
+            cached["image_path"] = image_path
+            await redis_client.cache_prediction(image_hash, cached)
+            
+        # Even on cache hits, create a new Prediction database record for the current user's history
+        disease_name = cached["result"]["disease_name"]
+        confidence = cached["result"]["confidence"]
+        
+        # Look up disease info from database
+        disease_info = await db.execute(
+            select(Disease).where(Disease.name == disease_name)
+        )
+        disease = disease_info.scalar_one_or_none()
+        
+        severity = disease.severity if disease else None
+        remedies = disease.remedies if disease else None
+        symptoms = disease.symptoms if disease else None
+        prevention = disease.prevention if disease else None
+        
+        prediction = Prediction(
+            user_id=user.id,
+            image_url=image_path,  # Store MinIO path, not presigned URL
             selected_crop=crop_type,
-            result=PredictionResult(**cached["result"]),
-            created_at=cached["created_at"],
+            disease_name=disease_name,
+            confidence=confidence,
+            severity=severity,
+            remedies=remedies,
+        )
+        db.add(prediction)
+        await db.flush()
+        
+        # Generate a fresh, non-expired presigned URL for this request
+        fresh_url = minio_client.get_image_url(image_path)
+        
+        result = PredictionResult(
+            disease_name=disease_name,
+            confidence=confidence,
+            severity=severity,
+            remedies=remedies,
+            symptoms=symptoms,
+            prevention=prevention,
+            top_predictions=cached["result"].get("top_predictions", []),
+        )
+        
+        return PredictionResponse(
+            id=prediction.id,
+            image_url=fresh_url,
+            selected_crop=crop_type,
+            result=result,
+            created_at=prediction.created_at,
         )
 
     # 7. Upload image to MinIO
@@ -100,7 +149,10 @@ async def predict_disease(
 
     # 8. Run ML prediction
     try:
-        ml_result = ml_service.predict(image_bytes)
+        ml_result = ml_service.predict(image_bytes, crop_type)
+    except AppException:
+        # Re-raise standard app exceptions directly (NotALeaf, CropMismatch, LowConfidence)
+        raise
     except Exception:
         raise PredictionFailed()
 
@@ -151,6 +203,7 @@ async def predict_disease(
     await redis_client.cache_prediction(image_hash, {
         "id": str(prediction.id),
         "image_url": image_url,
+        "image_path": object_name,
         "result": result.model_dump(),
         "created_at": prediction.created_at.isoformat(),
     })

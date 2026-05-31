@@ -12,9 +12,11 @@ class ApiConfig {
 
   // Prediction endpoints
   static const String predict = '/predict';
+  static const String drugPredict = '/drug/predict';
 
   // History endpoints
   static const String history = '/history';
+  static const String drugHistory = '/drug/history';
 
   // Crop & Disease endpoints
   static const String crops = '/crops';
